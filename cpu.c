@@ -290,7 +290,8 @@ static void do_BRBS(u16 instr)
 static void do_BREAK(u16 instr)
 {
     trace(__FUNCTION__);
-    unimplemented(__FUNCTION__);
+    fprintf(stderr, "BREAK\n");
+    // unimplemented(__FUNCTION__);
     Cycle++;
 }
 
