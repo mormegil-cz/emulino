@@ -22,17 +22,32 @@
 #include "usart.h"
 
 #include <stdio.h>
-#ifdef _MSC_VER
 
-#define read(f, b, l) ReadFile((f), (b), (l), NULL, NULL)
-#define write(f, b, l) WriteFile((f), (b), (l), NULL, NULL)
-
-#else
+#ifndef _MSC_VER
 #include <sys/select.h>
 #include <unistd.h>
 #endif
 
 #include "cpu.h"
+
+#ifdef _MSC_VER
+
+static void read(HANDLE f, u8 *buff, int len)
+{
+    DWORD r;
+    if (!ReadFile(f, buff, len, &r, NULL) || r != len)
+    {
+        *buff = 0;
+    }
+}
+
+static void write(HANDLE f, u8 *buff, int len)
+{
+    DWORD w;
+    WriteFile(f, buff, len, &w, NULL);
+}
+
+#endif
 
 #define USART_UCSR0A    0xc0
 #define USART_UCSR0B    0xc1
@@ -98,7 +113,18 @@ void usart_poll()
     DWORD pos, len;
     switch(GetFileType(input)) {
     case FILE_TYPE_CHAR:
-        available = WaitForSingleObject(input, 0) == WAIT_OBJECT_0;
+        INPUT_RECORD buff;
+        DWORD read;
+        available = false;
+        PeekConsoleInput(input, &buff, 1, &read);
+        while(read > 0) {
+            if (buff.EventType == KEY_EVENT && buff.Event.KeyEvent.bKeyDown && buff.Event.KeyEvent.uChar.AsciiChar > 0) {
+                available = true;
+                break;
+            }
+            FlushConsoleInputBuffer(input);
+            PeekConsoleInput(input, &buff, 1, &read);
+        }
         break;
     case FILE_TYPE_DISK:
         available = false;
@@ -130,8 +156,16 @@ void usart_poll()
 
 void usart_init()
 {
+#if _MSC_VER
+    if (!input) {
+        input = GetStdHandle(STD_INPUT_HANDLE);
+        SetConsoleMode(input, ENABLE_PROCESSED_INPUT);
+    }
+    if (!output) output = GetStdHandle(STD_OUTPUT_HANDLE);
+#else
     if (!input) input = stdin;
     if (!output) output = stdout;
+#endif
     register_io(USART_UCSR0A, usart_read_ucsra, usart_write_ucsra);
     register_io(USART_UCSR0B, usart_read_ucsrb, usart_write_ucsrb);
     register_io(USART_UDR0, usart_read_udr, usart_write_udr);
