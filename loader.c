@@ -67,8 +67,9 @@ u32 load_hex(const char *fn, u8 *buf, u32 bufsize)
                 int x;
                 sscanf(s+9+i*2, "%02x", &x);
                 buf[a+i] = x;
-                if (a+i >= m) {
-                    m = a+i+1;
+                u32 curr = (u32)(a+i+1);
+                if (curr > m) {
+                    m = curr;
                 }
             }
             break;
