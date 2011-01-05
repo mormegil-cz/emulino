@@ -18,6 +18,7 @@
  * along with Emulino.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
 #include "cpu.h"
 
 #include <assert.h>
@@ -40,6 +41,9 @@ typedef void (*Handler)(u16 instr);
 #define MAX_POLL_FUNCTIONS  16
 #define MAX_IRQ             27
 
+#ifdef _MSC_VER
+#pragma pack(push, 1)
+#endif
 typedef struct {
     union {
         struct {
@@ -80,6 +84,9 @@ typedef struct {
         //u16 _Words[DATA_SIZE_BYTES/2];
     };
 } TData;
+#ifdef _MSC_VER
+#pragma pack(pop)
+#endif
 
 static u8 ioread(u16 addr);
 static void iowrite(u16 addr, u8 value);
@@ -99,8 +106,10 @@ u32 LastPoll;
 PinFunction PinCallback[PIN_COUNT];
 
 COMPILE_ASSERT(sizeof(Data.SREG) == 1);
+#ifndef _MSC_VER
 COMPILE_ASSERT(((u8 *)&Data.SP) - Data._Bytes == 0x5d);
 COMPILE_ASSERT(((u8 *)&Data.SREG) - Data._Bytes == 0x5f);
+#endif
 
 static u8 read(u16 addr)
 {
@@ -1277,12 +1286,12 @@ void cpu_load_eeprom(u8 *buf, u32 bufsize)
     eeprom_load(buf, bufsize);
 }
 
-void cpu_usart_set_output(int fd)
+void cpu_usart_set_output(HANDLE fd)
 {
     usart_set_output(fd);
 }
 
-void cpu_usart_set_input(int fd)
+void cpu_usart_set_input(HANDLE fd)
 {
     usart_set_input(fd);
 }

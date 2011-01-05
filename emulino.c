@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "config.h"
 #include "cpu.h"
 #include "loader.h"
 
@@ -46,13 +47,14 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    int inf = 0;
-    int outf = 1;
+    HANDLE inf = 0;
+    HANDLE outf = 0;
 
     int a = 1;
     while (a < argc) {
         if (argv[a][0] == '-') {
-            if (strcmp(argv[a], "-io") == 0) {
+            /*if (strcmp(argv[a], "-io") == 0) {
+				/*
                 a++;
                 char fn[200];
                 snprintf(fn, sizeof(fn), "%s.in", argv[a]);
@@ -67,7 +69,7 @@ int main(int argc, char *argv[])
                     perror(fn);
                     exit(1);
                 }
-            } else {
+            } else */{
                 fprintf(stderr, "Unknown option: %s\n", argv[a]);
                 exit(1);
             }
@@ -91,8 +93,8 @@ int main(int argc, char *argv[])
     cpu_load_flash(prog, progsize);
     cpu_load_eeprom(eeprom, eepromsize);
 
-    cpu_usart_set_input(inf);
-    cpu_usart_set_output(outf);
+    if (inf) cpu_usart_set_input(inf);
+    if (outf) cpu_usart_set_output(outf);
 
     int i;
     for (i = 0; i < 8; i++) {

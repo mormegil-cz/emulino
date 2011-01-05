@@ -18,6 +18,7 @@
  * along with Emulino.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
 #include "util.h"
 
 #define PROGRAM_SIZE_WORDS  0x10000
@@ -49,8 +50,8 @@ void out_pin(int pin, bool state);
 void cpu_init();
 void cpu_load_flash(u8 *buf, u32 bufsize);
 void cpu_load_eeprom(u8 *buf, u32 bufsize);
-void cpu_usart_set_output(int fd);
-void cpu_usart_set_input(int fd);
+void cpu_usart_set_output(HANDLE fd);
+void cpu_usart_set_input(HANDLE fd);
 void cpu_reset();
 int cpu_run();
 void cpu_set_pin(int pin, bool state);

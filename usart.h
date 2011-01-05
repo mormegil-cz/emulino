@@ -18,6 +18,8 @@
  * along with Emulino.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 void usart_init();
-void usart_set_output(int fd);
-void usart_set_input(int fd);
+void usart_set_output(HANDLE fd);
+void usart_set_input(HANDLE fd);

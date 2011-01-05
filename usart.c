@@ -18,11 +18,19 @@
  * along with Emulino.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
 #include "usart.h"
 
 #include <stdio.h>
+#ifdef _MSC_VER
+
+#define read(f, b, l) ReadFile((f), (b), (l), NULL, NULL)
+#define write(f, b, l) WriteFile((f), (b), (l), NULL, NULL)
+
+#else
 #include <sys/select.h>
 #include <unistd.h>
+#endif
 
 #include "cpu.h"
 
@@ -38,8 +46,8 @@
 
 #define USART_IRQ   19
 
-static int output = 0; // stdout
-static int input = 1;  // stdin
+static HANDLE output = 0;
+static HANDLE input = 0;
 
 u8 UCSRA;
 u8 UCSRB;
@@ -85,11 +93,34 @@ void usart_write_udr(u16 addr, u8 value)
 
 void usart_poll()
 {
+    int available;
+#ifdef _MSC_VER
+    DWORD pos, len;
+    switch(GetFileType(input)) {
+    case FILE_TYPE_CHAR:
+        available = WaitForSingleObject(input, 0) == WAIT_OBJECT_0;
+        break;
+    case FILE_TYPE_DISK:
+        available = false;
+        pos = SetFilePointer(input, 0, NULL, FILE_CURRENT);
+        if (pos != INVALID_SET_FILE_POINTER) {
+            len = GetFileSize(input, NULL);
+            if (len != INVALID_FILE_SIZE) {
+                available = pos < len;
+            }
+        }
+        break;
+    default:
+        available = false;
+    }
+#else
     fd_set fds;
     FD_ZERO(&fds);
     FD_SET(input, &fds);
     struct timeval timeout = {0, 0};
-    if (select(input+1, &fds, NULL, NULL, &timeout) > 0) {
+    available = (select(input+1, &fds, NULL, NULL, &timeout) > 0);
+#endif
+    if (available) {
         UCSRA |= USART_UCSRA_RXC;
         if (UCSRB & USART_UCSRB_RXCIE) {
             irq(USART_IRQ);
@@ -99,18 +130,20 @@ void usart_poll()
 
 void usart_init()
 {
+    if (!input) input = stdin;
+    if (!output) output = stdout;
     register_io(USART_UCSR0A, usart_read_ucsra, usart_write_ucsra);
     register_io(USART_UCSR0B, usart_read_ucsrb, usart_write_ucsrb);
     register_io(USART_UDR0, usart_read_udr, usart_write_udr);
     register_poll(usart_poll);
 }
 
-void usart_set_output(int f)
+void usart_set_output(HANDLE f)
 {
     output = f;
 }
 
-void usart_set_input(int f)
+void usart_set_input(HANDLE f)
 {
     input = f;
 }
